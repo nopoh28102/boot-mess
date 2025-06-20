@@ -974,6 +974,190 @@ def check_file_usage():
         logger.error(f"Error checking file usage: {e}")
         return jsonify({'used': False, 'error': str(e)})
 
+@app.route('/admin/system-settings', methods=['GET', 'POST'])
+@admin_required
+def system_settings():
+    """System configuration settings"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            settings = {
+                'OPENAI_API_KEY': request.form.get('openai_api_key', ''),
+                'HUGGINGFACE_API_KEY': request.form.get('huggingface_api_key', ''),
+                'MODEL_NAME': request.form.get('model_name', 'gpt-4o'),
+                'MAX_TOKENS': request.form.get('max_tokens', '500'),
+                'TEMPERATURE': request.form.get('temperature', '0.7'),
+                'PAGE_ACCESS_TOKEN': request.form.get('page_access_token', ''),
+                'VERIFY_TOKEN': request.form.get('verify_token', ''),
+                'APP_SECRET': request.form.get('app_secret', ''),
+                'SESSION_SECRET': request.form.get('session_secret', ''),
+                'DATABASE_URL': request.form.get('database_url', 'sqlite:///facebook_bot.db'),
+                'PORT': request.form.get('port', '5000'),
+                'HOST': request.form.get('host', '0.0.0.0'),
+                'DEBUG': request.form.get('debug', 'false')
+            }
+            
+            # Update .env file
+            env_content = []
+            env_content.append("# OpenAI Configuration")
+            env_content.append(f"OPENAI_API_KEY={settings['OPENAI_API_KEY']}")
+            env_content.append(f"HUGGINGFACE_API_KEY={settings['HUGGINGFACE_API_KEY']}")
+            env_content.append(f"MODEL_NAME={settings['MODEL_NAME']}")
+            env_content.append(f"MAX_TOKENS={settings['MAX_TOKENS']}")
+            env_content.append(f"TEMPERATURE={settings['TEMPERATURE']}")
+            env_content.append("")
+            env_content.append("# Facebook Messenger Integration")
+            env_content.append(f"PAGE_ACCESS_TOKEN={settings['PAGE_ACCESS_TOKEN']}")
+            env_content.append(f"VERIFY_TOKEN={settings['VERIFY_TOKEN']}")
+            env_content.append(f"APP_SECRET={settings['APP_SECRET']}")
+            env_content.append("")
+            env_content.append("# Security & Session")
+            env_content.append(f"SESSION_SECRET={settings['SESSION_SECRET']}")
+            env_content.append("")
+            env_content.append("# Database Configuration")
+            env_content.append(f"DATABASE_URL={settings['DATABASE_URL']}")
+            env_content.append("")
+            env_content.append("# Server Configuration")
+            env_content.append(f"PORT={settings['PORT']}")
+            env_content.append(f"HOST={settings['HOST']}")
+            env_content.append(f"DEBUG={settings['DEBUG']}")
+            env_content.append("")
+            
+            # Write to .env file
+            with open('.env', 'w', encoding='utf-8') as f:
+                f.write('\n'.join(env_content))
+            
+            # Update environment variables in current session
+            for key, value in settings.items():
+                os.environ[key] = str(value)
+            
+            # Update global variables
+            global PAGE_ACCESS_TOKEN, VERIFY_TOKEN, OPENAI_API_KEY
+            PAGE_ACCESS_TOKEN = settings['PAGE_ACCESS_TOKEN']
+            VERIFY_TOKEN = settings['VERIFY_TOKEN']
+            OPENAI_API_KEY = settings['OPENAI_API_KEY']
+            
+            # Reinitialize AI engine with new settings
+            global ai_engine
+            if settings['OPENAI_API_KEY']:
+                ai_engine = EnhancedAIEngine()
+            
+            flash('تم حفظ إعدادات النظام بنجاح. قد تحتاج لإعادة تشغيل الخادم لتطبيق بعض التغييرات.', 'success')
+            return redirect(url_for('system_settings'))
+            
+        except Exception as e:
+            logger.error(f"Error saving system settings: {e}")
+            flash(f'خطأ في حفظ الإعدادات: {str(e)}', 'error')
+    
+    # Load current settings
+    current_settings = {
+        'openai_api_key': os.getenv('OPENAI_API_KEY', ''),
+        'huggingface_api_key': os.getenv('HUGGINGFACE_API_KEY', ''),
+        'model_name': os.getenv('MODEL_NAME', 'gpt-4o'),
+        'max_tokens': os.getenv('MAX_TOKENS', '500'),
+        'temperature': os.getenv('TEMPERATURE', '0.7'),
+        'page_access_token': os.getenv('PAGE_ACCESS_TOKEN', ''),
+        'verify_token': os.getenv('VERIFY_TOKEN', ''),
+        'app_secret': os.getenv('APP_SECRET', ''),
+        'session_secret': os.getenv('SESSION_SECRET', ''),
+        'database_url': os.getenv('DATABASE_URL', 'sqlite:///facebook_bot.db'),
+        'port': os.getenv('PORT', '5000'),
+        'host': os.getenv('HOST', '0.0.0.0'),
+        'debug': os.getenv('DEBUG', 'True').lower() == 'true'
+    }
+    
+    return render_template('system_settings.html', settings=current_settings)
+
+@app.route('/admin/system-settings/test-connection', methods=['POST'])
+@admin_required
+def test_system_connections():
+    """Test system connections and API keys"""
+    try:
+        data = request.get_json()
+        test_type = data.get('type')
+        
+        results = {}
+        
+        if test_type == 'openai' or test_type == 'all':
+            try:
+                api_key = data.get('api_key') or os.getenv('OPENAI_API_KEY')
+                if api_key:
+                    import openai
+                    openai.api_key = api_key
+                    models = openai.Model.list()
+                    results['openai'] = {'success': True, 'message': 'اتصال ناجح'}
+                else:
+                    results['openai'] = {'success': False, 'message': 'مفتاح API غير موجود'}
+            except Exception as e:
+                results['openai'] = {'success': False, 'message': str(e)}
+        
+        if test_type == 'facebook' or test_type == 'all':
+            try:
+                token = data.get('token') or os.getenv('PAGE_ACCESS_TOKEN')
+                if token:
+                    url = f"https://graph.facebook.com/me?access_token={token}"
+                    response = requests.get(url, timeout=10)
+                    if response.status_code == 200:
+                        results['facebook'] = {'success': True, 'message': 'اتصال ناجح'}
+                    else:
+                        results['facebook'] = {'success': False, 'message': 'توكن غير صحيح'}
+                else:
+                    results['facebook'] = {'success': False, 'message': 'توكن غير موجود'}
+            except Exception as e:
+                results['facebook'] = {'success': False, 'message': str(e)}
+        
+        if test_type == 'database' or test_type == 'all':
+            try:
+                conn = DatabaseManager.get_connection()
+                cursor = conn.cursor()
+                cursor.execute('SELECT 1')
+                conn.close()
+                results['database'] = {'success': True, 'message': 'قاعدة البيانات متصلة'}
+            except Exception as e:
+                results['database'] = {'success': False, 'message': str(e)}
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/admin/system-settings/backup', methods=['POST'])
+@admin_required
+def backup_system_settings():
+    """Backup current system settings"""
+    try:
+        import json
+        from datetime import datetime
+        
+        settings = {
+            'backup_date': datetime.now().isoformat(),
+            'openai_api_key': '***masked***' if os.getenv('OPENAI_API_KEY') else '',
+            'huggingface_api_key': '***masked***' if os.getenv('HUGGINGFACE_API_KEY') else '',
+            'model_name': os.getenv('MODEL_NAME', 'gpt-4o'),
+            'max_tokens': os.getenv('MAX_TOKENS', '500'),
+            'temperature': os.getenv('TEMPERATURE', '0.7'),
+            'page_access_token': '***masked***' if os.getenv('PAGE_ACCESS_TOKEN') else '',
+            'verify_token': os.getenv('VERIFY_TOKEN', ''),
+            'app_secret': '***masked***' if os.getenv('APP_SECRET') else '',
+            'session_secret': '***masked***' if os.getenv('SESSION_SECRET') else '',
+            'database_url': os.getenv('DATABASE_URL', 'sqlite:///facebook_bot.db'),
+            'port': os.getenv('PORT', '5000'),
+            'host': os.getenv('HOST', '0.0.0.0'),
+            'debug': os.getenv('DEBUG', 'True')
+        }
+        
+        from flask import Response
+        backup_json = json.dumps(settings, ensure_ascii=False, indent=2)
+        
+        return Response(
+            backup_json,
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=system_settings_backup.json'}
+        )
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/admin/ai-settings', methods=['GET', 'POST'])
 @admin_required
 def ai_settings():

@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات النظام - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cog me-2"></i>إعدادات النظام</h2>
+        <div>
+            <button class="btn btn-info" onclick="testAllConnections()">
+                <i class="fas fa-wifi me-1"></i>اختبار الاتصالات
+            </button>
+            <button class="btn btn-warning" onclick="backupSettings()">
+                <i class="fas fa-download me-1"></i>نسخ احتياطي
+            </button>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <i class="fas fa-robot fa-2x text-info mb-2"></i>
+                    <h6>OpenAI API</h6>
+                    <span class="badge bg-secondary" id="openai-status">غير محدد</span>
+                    <button class="btn btn-sm btn-outline-info mt-2" onclick="testConnection('openai')">اختبار</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <i class="fab fa-facebook fa-2x text-primary mb-2"></i>
+                    <h6>Facebook API</h6>
+                    <span class="badge bg-secondary" id="facebook-status">غير محدد</span>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="testConnection('facebook')">اختبار</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <i class="fas fa-database fa-2x text-success mb-2"></i>
+                    <h6>قاعدة البيانات</h6>
+                    <span class="badge bg-secondary" id="database-status">غير محدد</span>
+                    <button class="btn btn-sm btn-outline-success mt-2" onclick="testConnection('database')">اختبار</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Form -->
+    <form method="POST" id="settingsForm">
+        <!-- OpenAI Configuration -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-robot me-2"></i>إعدادات OpenAI</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="openai_api_key" class="form-label">مفتاح OpenAI API</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="openai_api_key" name="openai_api_key" 
+                                       value="{{ settings.openai_api_key }}" placeholder="sk-...">
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('openai_api_key')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">احصل على مفتاح من <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a></small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="huggingface_api_key" class="form-label">مفتاح HuggingFace API</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="huggingface_api_key" name="huggingface_api_key" 
+                                       value="{{ settings.huggingface_api_key }}" placeholder="hf_...">
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('huggingface_api_key')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">احصل على مفتاح من <a href="https://huggingface.co/settings/tokens" target="_blank">HuggingFace</a></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="model_name" class="form-label">نموذج GPT</label>
+                            <select class="form-select" id="model_name" name="model_name">
+                                <option value="gpt-4o" {% if settings.model_name == 'gpt-4o' %}selected{% endif %}>GPT-4o</option>
+                                <option value="gpt-4" {% if settings.model_name == 'gpt-4' %}selected{% endif %}>GPT-4</option>
+                                <option value="gpt-3.5-turbo" {% if settings.model_name == 'gpt-3.5-turbo' %}selected{% endif %}>GPT-3.5 Turbo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="max_tokens" class="form-label">عدد الرموز الأقصى</label>
+                            <input type="number" class="form-control" id="max_tokens" name="max_tokens" 
+                                   value="{{ settings.max_tokens }}" min="50" max="4000">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="temperature" class="form-label">درجة الحرارة (الإبداع)</label>
+                            <input type="range" class="form-range" id="temperature" name="temperature" 
+                                   value="{{ settings.temperature }}" min="0" max="2" step="0.1" 
+                                   oninput="document.getElementById('temp-value').textContent = this.value">
+                            <small class="form-text text-muted">القيمة: <span id="temp-value">{{ settings.temperature }}</span></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Facebook Configuration -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fab fa-facebook me-2"></i>إعدادات Facebook Messenger</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="page_access_token" class="form-label">Page Access Token</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="page_access_token" name="page_access_token" 
+                                       value="{{ settings.page_access_token }}" placeholder="EAAxxxx...">
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('page_access_token')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="verify_token" class="form-label">Verify Token</label>
+                            <input type="text" class="form-control" id="verify_token" name="verify_token" 
+                                   value="{{ settings.verify_token }}" placeholder="webhook_verify_token">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="app_secret" class="form-label">App Secret</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="app_secret" name="app_secret" 
+                                       value="{{ settings.app_secret }}" placeholder="xxxxxxxx...">
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('app_secret')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Configuration -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>إعدادات الأمان</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="session_secret" class="form-label">مفتاح الجلسة السري</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="session_secret" name="session_secret" 
+                               value="{{ settings.session_secret }}" placeholder="مفتاح عشوائي طويل">
+                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('session_secret')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="generateSecretKey()">
+                            <i class="fas fa-random"></i> توليد
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">يُستخدم لتشفير جلسات المستخدمين</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Configuration -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-database me-2"></i>إعدادات قاعدة البيانات</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="database_url" class="form-label">رابط قاعدة البيانات</label>
+                    <input type="text" class="form-control" id="database_url" name="database_url" 
+                           value="{{ settings.database_url }}" placeholder="sqlite:///facebook_bot.db">
+                    <small class="form-text text-muted">مثال PostgreSQL: postgresql://user:pass@localhost/dbname</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Server Configuration -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-server me-2"></i>إعدادات الخادم</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="host" class="form-label">عنوان المضيف</label>
+                            <input type="text" class="form-control" id="host" name="host" 
+                                   value="{{ settings.host }}" placeholder="0.0.0.0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="port" class="form-label">المنفذ</label>
+                            <input type="number" class="form-control" id="port" name="port" 
+                                   value="{{ settings.port }}" min="1000" max="65535">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="debug" class="form-label">وضع التطوير</label>
+                            <select class="form-select" id="debug" name="debug">
+                                <option value="true" {% if settings.debug %}selected{% endif %}>مفعل</option>
+                                <option value="false" {% if not settings.debug %}selected{% endif %}>معطل</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i>حفظ جميع الإعدادات
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const button = field.nextElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        field.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+function generateSecretKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let result = '';
+    for (let i = 0; i < 64; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('session_secret').value = result;
+}
+
+function testConnection(type) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> اختبار...';
+    button.disabled = true;
+    
+    const data = { type: type };
+    
+    // Add specific field values for testing
+    if (type === 'openai') {
+        data.api_key = document.getElementById('openai_api_key').value;
+    } else if (type === 'facebook') {
+        data.token = document.getElementById('page_access_token').value;
+    }
+    
+    fetch('/admin/system-settings/test-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusElement = document.getElementById(type + '-status');
+        
+        if (data[type] && data[type].success) {
+            statusElement.textContent = data[type].message;
+            statusElement.className = 'badge bg-success';
+        } else {
+            statusElement.textContent = data[type] ? data[type].message : 'خطأ في الاختبار';
+            statusElement.className = 'badge bg-danger';
+        }
+    })
+    .catch(error => {
+        const statusElement = document.getElementById(type + '-status');
+        statusElement.textContent = 'خطأ في الاتصال';
+        statusElement.className = 'badge bg-danger';
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function testAllConnections() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> اختبار جميع الاتصالات...';
+    button.disabled = true;
+    
+    fetch('/admin/system-settings/test-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            type: 'all',
+            api_key: document.getElementById('openai_api_key').value,
+            token: document.getElementById('page_access_token').value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update OpenAI status
+        if (data.openai) {
+            const openaiStatus = document.getElementById('openai-status');
+            openaiStatus.textContent = data.openai.message;
+            openaiStatus.className = data.openai.success ? 'badge bg-success' : 'badge bg-danger';
+        }
+        
+        // Update Facebook status
+        if (data.facebook) {
+            const facebookStatus = document.getElementById('facebook-status');
+            facebookStatus.textContent = data.facebook.message;
+            facebookStatus.className = data.facebook.success ? 'badge bg-success' : 'badge bg-danger';
+        }
+        
+        // Update Database status
+        if (data.database) {
+            const databaseStatus = document.getElementById('database-status');
+            databaseStatus.textContent = data.database.message;
+            databaseStatus.className = data.database.success ? 'badge bg-success' : 'badge bg-danger';
+        }
+    })
+    .catch(error => {
+        alert('خطأ في اختبار الاتصالات: ' + error);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function backupSettings() {
+    fetch('/admin/system-settings/backup', {
+        method: 'POST'
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'system_settings_backup.json';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+        alert('خطأ في إنشاء النسخة الاحتياطية: ' + error);
+    });
+}
+
+// Form validation
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    const requiredFields = ['openai_api_key', 'page_access_token', 'session_secret'];
+    let hasErrors = false;
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            hasErrors = true;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (hasErrors) {
+        e.preventDefault();
+        alert('يرجى ملء جميع الحقول المطلوبة');
+    }
+});
+
+// Auto-test connections on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        testAllConnections();
+    }, 1000);
+});
+</script>
+{% endblock %}
