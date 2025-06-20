@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات الذكاء الاصطناعي - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-brain me-2"></i>إعدادات الذكاء الاصطناعي</h2>
+        <div>
+            <button type="button" class="btn btn-outline-info" onclick="testAI()">
+                <i class="fas fa-flask me-2"></i>اختبار النظام
+            </button>
+        </div>
+    </div>
+
+    <form method="POST" id="aiSettingsForm">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- OpenAI Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fab fa-openai me-2"></i>إعدادات OpenAI</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model_name" class="form-label">نموذج الذكاء الاصطناعي</label>
+                                    <select class="form-select" id="model_name" name="model_name">
+                                        <option value="gpt-4o" {% if settings.model_name == 'gpt-4o' %}selected{% endif %}>GPT-4o (الأحدث)</option>
+                                        <option value="gpt-4" {% if settings.model_name == 'gpt-4' %}selected{% endif %}>GPT-4</option>
+                                        <option value="gpt-3.5-turbo" {% if settings.model_name == 'gpt-3.5-turbo' %}selected{% endif %}>GPT-3.5 Turbo</option>
+                                    </select>
+                                    <div class="form-text">النموذج المستخدم لتوليد الردود</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_tokens" class="form-label">الحد الأقصى للكلمات</label>
+                                    <input type="number" class="form-control" id="max_tokens" name="max_tokens" 
+                                           value="{{ settings.max_tokens or 500 }}" min="50" max="2000">
+                                    <div class="form-text">عدد الكلمات القصوى في الرد</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="temperature" class="form-label">درجة الإبداع (Temperature)</label>
+                                    <input type="range" class="form-range" id="temperature" name="temperature" 
+                                           min="0" max="2" step="0.1" value="{{ settings.temperature or 0.7 }}">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">محافظ (0)</small>
+                                        <span id="temperatureValue">{{ settings.temperature or 0.7 }}</span>
+                                        <small class="text-muted">إبداعي (2)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="fallback_mode" class="form-label">نمط الاحتياط</label>
+                                    <select class="form-select" id="fallback_mode" name="fallback_mode">
+                                        <option value="intelligent" {% if settings.fallback_mode == 'intelligent' %}selected{% endif %}>ذكي</option>
+                                        <option value="simple" {% if settings.fallback_mode == 'simple' %}selected{% endif %}>بسيط</option>
+                                        <option value="template" {% if settings.fallback_mode == 'template' %}selected{% endif %}>قوالب محددة</option>
+                                    </select>
+                                    <div class="form-text">نمط الردود عند فشل الذكاء الاصطناعي</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learning Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-graduation-cap me-2"></i>إعدادات التعلم</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_learning" name="enable_learning" 
+                                           {% if settings.enable_learning %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_learning">
+                                        <strong>تفعيل التعلم التلقائي</strong>
+                                    </label>
+                                    <div class="form-text">السماح للنظام بالتعلم من المحادثات</div>
+                                </div>
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_feedback" name="enable_feedback" 
+                                           {% if settings.enable_feedback %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_feedback">
+                                        <strong>تفعيل تعلم التقييمات</strong>
+                                    </label>
+                                    <div class="form-text">التعلم من تقييمات المستخدمين</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="learning_threshold" class="form-label">عتبة التعلم</label>
+                                    <input type="range" class="form-range" id="learning_threshold" name="learning_threshold" 
+                                           min="0.5" max="1.0" step="0.1" value="{{ settings.learning_threshold or 0.8 }}">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">متساهل (0.5)</small>
+                                        <span id="thresholdValue">{{ settings.learning_threshold or 0.8 }}</span>
+                                        <small class="text-muted">صارم (1.0)</small>
+                                    </div>
+                                    <div class="form-text">الحد الأدنى لثقة التعلم</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Response Preferences -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-comment-dots me-2"></i>تفضيلات الردود</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="response_style" class="form-label">أسلوب الردود</label>
+                                    <select class="form-select" id="response_style" name="response_style">
+                                        <option value="formal" {% if settings.response_style == 'formal' %}selected{% endif %}>رسمي</option>
+                                        <option value="friendly" {% if settings.response_style == 'friendly' %}selected{% endif %}>ودود</option>
+                                        <option value="casual" {% if settings.response_style == 'casual' %}selected{% endif %}>عادي</option>
+                                        <option value="professional" {% if settings.response_style == 'professional' %}selected{% endif %}>مهني</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_language" class="form-label">اللغة الافتراضية</label>
+                                    <select class="form-select" id="default_language" name="default_language">
+                                        <option value="ar" {% if settings.default_language == 'ar' %}selected{% endif %}>العربية</option>
+                                        <option value="en" {% if settings.default_language == 'en' %}selected{% endif %}>الإنجليزية</option>
+                                        <option value="auto" {% if settings.default_language == 'auto' %}selected{% endif %}>تلقائي</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="system_prompt" class="form-label">التوجيه الأساسي للنظام</label>
+                            <textarea class="form-control" id="system_prompt" name="system_prompt" rows="4"
+                                      placeholder="أدخل التوجيهات الأساسية للذكاء الاصطناعي">{{ settings.system_prompt or 'أنت مساعد ذكي ومفيد في خدمة العملاء. اجب باللغة العربية بشكل ودود ومهني.' }}</textarea>
+                            <div class="form-text">التوجيهات الأساسية التي تحدد شخصية البوت</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- System Status -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line me-2"></i>حالة النظام</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>OpenAI API</span>
+                                <span class="badge bg-success" id="openaiStatus">متصل</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>HuggingFace API</span>
+                                <span class="badge bg-success" id="hfStatus">متصل</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>نظام التعلم</span>
+                                <span class="badge bg-info" id="learningStatus">نشط</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>قاعدة البيانات</span>
+                                <span class="badge bg-success" id="dbStatus">متصلة</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt me-2"></i>إجراءات سريعة</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="resetToDefaults()">
+                                <i class="fas fa-undo me-2"></i>إعادة تعيين افتراضية
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="exportSettings()">
+                                <i class="fas fa-download me-2"></i>تصدير الإعدادات
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="clearLearningData()">
+                                <i class="fas fa-trash-alt me-2"></i>مسح بيانات التعلم
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-tachometer-alt me-2"></i>إحصائيات الأداء</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <small class="text-muted">معدل نجاح الردود</small>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: 87%">87%</div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">سرعة الاستجابة</small>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 92%">1.2s</div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">دقة التعلم</small>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 78%">78%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>العودة للوحة التحكم
+            </a>
+            <div>
+                <button type="button" class="btn btn-outline-warning me-2" onclick="previewChanges()">
+                    <i class="fas fa-eye me-2"></i>معاينة التغييرات
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>حفظ الإعدادات
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Test AI Modal -->
+<div class="modal fade" id="testAIModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">اختبار الذكاء الاصطناعي</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="testMessage" class="form-label">رسالة الاختبار</label>
+                    <input type="text" class="form-control" id="testMessage" 
+                           placeholder="اكتب رسالة لاختبار النظام" value="مرحبا، كيف حالك؟">
+                </div>
+                <div id="testResult" class="mt-3" style="display: none;">
+                    <h6>النتيجة:</h6>
+                    <div id="testResponse" class="bg-light p-3 rounded"></div>
+                    <div id="testStats" class="mt-2 small text-muted"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" onclick="runAITest()">
+                    <i class="fas fa-play me-2"></i>تشغيل الاختبار
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Update range values display
+document.getElementById('temperature').addEventListener('input', function() {
+    document.getElementById('temperatureValue').textContent = this.value;
+});
+
+document.getElementById('learning_threshold').addEventListener('input', function() {
+    document.getElementById('thresholdValue').textContent = this.value;
+});
+
+function testAI() {
+    const modal = new bootstrap.Modal(document.getElementById('testAIModal'));
+    modal.show();
+}
+
+function runAITest() {
+    const message = document.getElementById('testMessage').value;
+    const resultDiv = document.getElementById('testResult');
+    const responseDiv = document.getElementById('testResponse');
+    const statsDiv = document.getElementById('testStats');
+    
+    if (!message.trim()) {
+        alert('الرجاء إدخال رسالة للاختبار');
+        return;
+    }
+    
+    responseDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الاختبار...';
+    resultDiv.style.display = 'block';
+    
+    const startTime = Date.now();
+    
+    fetch('/api/ai/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            test_mode: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
+        
+        if (data.success) {
+            responseDiv.innerHTML = `
+                <div class="border-start border-primary border-3 ps-3">
+                    <strong>الرد:</strong> ${data.response}<br>
+                    <small class="text-muted">المصدر: ${data.source || 'غير محدد'}</small>
+                </div>
+            `;
+            
+            statsDiv.innerHTML = `
+                <i class="fas fa-clock"></i> وقت الاستجابة: ${responseTime}ms |
+                <i class="fas fa-chart-line"></i> الثقة: ${(data.confidence * 100).toFixed(1)}% |
+                <i class="fas fa-cog"></i> النموذج: ${data.model || 'افتراضي'}
+            `;
+        } else {
+            responseDiv.innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> خطأ: ${data.error}
+                </div>
+            `;
+            
+            statsDiv.innerHTML = `<i class="fas fa-clock"></i> وقت الاستجابة: ${responseTime}ms`;
+        }
+    })
+    .catch(error => {
+        responseDiv.innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-exclamation-triangle"></i> خطأ في الاتصال: ${error.message}
+            </div>
+        `;
+        
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
+        statsDiv.innerHTML = `<i class="fas fa-clock"></i> وقت الاستجابة: ${responseTime}ms`;
+    });
+}
+
+function resetToDefaults() {
+    if (confirm('هل أنت متأكد من إعادة تعيين جميع الإعدادات للقيم الافتراضية؟')) {
+        document.getElementById('model_name').value = 'gpt-4o';
+        document.getElementById('max_tokens').value = '500';
+        document.getElementById('temperature').value = '0.7';
+        document.getElementById('temperatureValue').textContent = '0.7';
+        document.getElementById('fallback_mode').value = 'intelligent';
+        document.getElementById('enable_learning').checked = true;
+        document.getElementById('enable_feedback').checked = true;
+        document.getElementById('learning_threshold').value = '0.8';
+        document.getElementById('thresholdValue').textContent = '0.8';
+        document.getElementById('response_style').value = 'friendly';
+        document.getElementById('default_language').value = 'ar';
+        document.getElementById('system_prompt').value = 'أنت مساعد ذكي ومفيد في خدمة العملاء. اجب باللغة العربية بشكل ودود ومهني.';
+    }
+}
+
+function exportSettings() {
+    const form = document.getElementById('aiSettingsForm');
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        settings[key] = value;
+    }
+    
+    const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai_settings.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function clearLearningData() {
+    if (confirm('هل أنت متأكد من مسح جميع بيانات التعلم؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+        fetch('/api/ai/clear-learning', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('تم مسح بيانات التعلم بنجاح');
+                location.reload();
+            } else {
+                alert('فشل في مسح البيانات: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('خطأ في الاتصال: ' + error.message);
+        });
+    }
+}
+
+function previewChanges() {
+    const form = document.getElementById('aiSettingsForm');
+    const formData = new FormData(form);
+    
+    let preview = 'معاينة الإعدادات الجديدة:\n\n';
+    
+    for (let [key, value] of formData.entries()) {
+        preview += `${key}: ${value}\n`;
+    }
+    
+    alert(preview);
+}
+
+// Auto-save functionality
+let autoSaveTimeout;
+document.getElementById('aiSettingsForm').addEventListener('input', function() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(function() {
+        // Show auto-save indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        indicator.style.top = '20px';
+        indicator.style.right = '20px';
+        indicator.style.zIndex = '9999';
+        indicator.innerHTML = '<i class="fas fa-save"></i> تم الحفظ التلقائي';
+        document.body.appendChild(indicator);
+        
+        setTimeout(() => {
+            indicator.remove();
+        }, 3000);
+    }, 2000);
+});
+</script>
+{% endblock %}

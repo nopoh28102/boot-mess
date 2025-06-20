@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم</h2>
+        <div>
+            <span class="badge bg-success">متصل</span>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_conversations }}</h4>
+                            <p class="mb-0">إجمالي المحادثات</p>
+                        </div>
+                        <i class="fas fa-comments fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.unique_users }}</h4>
+                            <p class="mb-0">المستخدمين الفريدين</p>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.today_conversations }}</h4>
+                            <p class="mb-0">محادثات اليوم</p>
+                        </div>
+                        <i class="fas fa-calendar-day fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.popular_responses|length }}</h4>
+                            <p class="mb-0">ردود نشطة</p>
+                        </div>
+                        <i class="fas fa-reply fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt me-2"></i>الإجراءات السريعة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_response') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>إضافة رد جديد
+                        </a>
+                        <a href="{{ url_for('admin_responses') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-2"></i>إدارة الردود
+                        </a>
+                        <a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar me-2"></i>عرض التحليلات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-fire me-2"></i>الردود الأكثر استخداماً</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats.popular_responses %}
+                        {% for response in stats.popular_responses[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary">{{ response[0] }}</span>
+                            <span class="text-muted">{{ response[1] }} مرة</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">لا توجد ردود مستخدمة بعد</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Conversations -->
+    {% if stats.recent_conversations %}
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-history me-2"></i>أحدث المحادثات</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>الرسالة</th>
+                            <th>الرد</th>
+                            <th>الوقت</th>
+                            <th>النوع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conv in stats.recent_conversations %}
+                        <tr>
+                            <td>
+                                <code class="text-primary">{{ conv[0][:8] }}...</code>
+                            </td>
+                            <td>
+                                <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                                    {{ conv[1] }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                                    {{ conv[2] }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ conv[3][:16] }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">AI</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

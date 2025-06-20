@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}التحليلات - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-bar me-2"></i>تحليلات البوت</h2>
+        <div>
+            <button class="btn btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>طباعة التقرير
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.total_conversations }}</h3>
+                            <p class="mb-0">إجمالي المحادثات</p>
+                        </div>
+                        <i class="fas fa-comments fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.unique_users }}</h3>
+                            <p class="mb-0">مستخدمين فريدين</p>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-gradient-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.today_conversations }}</h3>
+                            <p class="mb-0">محادثات اليوم</p>
+                        </div>
+                        <i class="fas fa-calendar-day fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-gradient-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ (stats.total_conversations / stats.unique_users if stats.unique_users > 0 else 0) | round(1) }}</h3>
+                            <p class="mb-0">متوسط المحادثات</p>
+                        </div>
+                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Popular Responses Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-fire me-2"></i>الردود الأكثر استخداماً</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats.popular_responses %}
+                        {% for response in stats.popular_responses %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold">{{ response[0] }}</span>
+                                <span class="badge bg-primary">{{ response[1] }}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (response[1] / stats.popular_responses[0][1] * 100) if stats.popular_responses else 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                            <p>لا توجد بيانات كافية لعرض الإحصائيات</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock me-2"></i>النشاط الأخير</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if stats.recent_conversations %}
+                        {% for conv in stats.recent_conversations[:10] %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <p class="mb-1">
+                                        <strong>المستخدم:</strong> 
+                                        <code class="text-primary">{{ conv[0][:8] }}...</code>
+                                    </p>
+                                    <p class="mb-1 text-muted small">
+                                        <strong>الرسالة:</strong> {{ conv[1][:50] }}{% if conv[1]|length > 50 %}...{% endif %}
+                                    </p>
+                                    <p class="mb-0 text-success small">
+                                        <strong>الرد:</strong> {{ conv[2][:50] }}{% if conv[2]|length > 50 %}...{% endif %}
+                                    </p>
+                                </div>
+                                <small class="text-muted">{{ conv[3][11:16] }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-history fa-3x mb-3"></i>
+                            <p>لا توجد محادثات مسجلة</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table me-2"></i>إحصائيات مفصلة</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>إحصائيات عامة:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>إجمالي المحادثات:</strong> {{ stats.total_conversations }}</li>
+                        <li><strong>المستخدمين الفريدين:</strong> {{ stats.unique_users }}</li>
+                        <li><strong>محادثات اليوم:</strong> {{ stats.today_conversations }}</li>
+                        <li><strong>متوسط المحادثات لكل مستخدم:</strong> 
+                            {{ (stats.total_conversations / stats.unique_users if stats.unique_users > 0 else 0) | round(2) }}
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>إحصائيات الردود:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>عدد الردود المخصصة:</strong> {{ stats.popular_responses|length }}</li>
+                        <li><strong>أكثر رد استخداماً:</strong> 
+                            {% if stats.popular_responses %}
+                                {{ stats.popular_responses[0][0] }} ({{ stats.popular_responses[0][1] }} مرة)
+                            {% else %}
+                                لا يوجد
+                            {% endif %}
+                        </li>
+                        <li><strong>نسبة النجاح:</strong> 
+                            {% if stats.total_conversations > 0 %}
+                                {{ ((stats.total_conversations / stats.total_conversations) * 100) | round(1) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-right me-2"></i>العودة للوحة التحكم
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+}
+.bg-gradient-success {
+    background: linear-gradient(45deg, #28a745, #1e7e34);
+}
+.bg-gradient-info {
+    background: linear-gradient(45deg, #17a2b8, #138496);
+}
+.bg-gradient-warning {
+    background: linear-gradient(45deg, #ffc107, #e0a800);
+}
+@media print {
+    .btn, .navbar, .card-header .btn {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الوسائط المتعددة - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-photo-video me-2"></i>إدارة الردود المتعددة الوسائط</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMediaModal">
+            <i class="fas fa-plus me-2"></i>إضافة رد وسائط
+        </button>
+    </div>
+
+    <!-- Media Types Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <i class="fas fa-image fa-2x text-primary mb-2"></i>
+                    <h6>الصور</h6>
+                    <small class="text-muted">JPG, PNG, GIF</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <i class="fas fa-video fa-2x text-success mb-2"></i>
+                    <h6>الفيديوهات</h6>
+                    <small class="text-muted">MP4, AVI, MOV</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <i class="fas fa-music fa-2x text-info mb-2"></i>
+                    <h6>الملفات الصوتية</h6>
+                    <small class="text-muted">MP3, WAV, OGG</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <i class="fas fa-file fa-2x text-warning mb-2"></i>
+                    <h6>المستندات</h6>
+                    <small class="text-muted">PDF, DOC, ZIP</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Responses List -->
+    <div class="card">
+        <div class="card-header">
+            <h5>جميع الردود المتعددة الوسائط</h5>
+        </div>
+        <div class="card-body">
+            {% if media_responses %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>المحفز</th>
+                            <th>نوع الرد</th>
+                            <th>نوع الوسائط</th>
+                            <th>الرابط</th>
+                            <th>مرات الاستخدام</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for response in media_responses %}
+                        <tr>
+                            <td><code>{{ response[1] }}</code></td>
+                            <td>
+                                {% if response[2] == 'image' %}
+                                <span class="badge bg-primary">صورة</span>
+                                {% elif response[2] == 'video' %}
+                                <span class="badge bg-success">فيديو</span>
+                                {% elif response[2] == 'audio' %}
+                                <span class="badge bg-info">صوت</span>
+                                {% elif response[2] == 'file' %}
+                                <span class="badge bg-warning">ملف</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ response[2] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if response[4] %}
+                                <span class="text-muted">{{ response[4] }}</span>
+                                {% else %}
+                                <span class="text-muted">غير محدد</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ response[3] }}" target="_blank" class="text-decoration-none">
+                                    {{ response[3][:50] }}{% if response[3]|length > 50 %}...{% endif %}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ response[5] or 0 }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            onclick="previewMedia('{{ response[2] }}', '{{ response[3] }}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success" 
+                                            onclick="testMedia({{ response[0] }})">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteMedia({{ response[0] }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-photo-video fa-3x text-muted mb-3"></i>
+                <h5>لا توجد ردود وسائط محفوظة</h5>
+                <p class="text-muted">ابدأ بإضافة أول رد متعدد الوسائط</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMediaModal">
+                    <i class="fas fa-plus me-2"></i>إضافة رد وسائط
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-right me-2"></i>العودة للوحة التحكم
+        </a>
+    </div>
+</div>
+
+<!-- Add Media Modal -->
+<div class="modal fade" id="addMediaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة رد متعدد الوسائط</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="trigger_text" class="form-label">نص المحفز</label>
+                                <input type="text" class="form-control" id="trigger_text" name="trigger_text" 
+                                       placeholder="مثال: صورة، فيديو، ملف" required>
+                                <div class="form-text">الكلمة التي ستؤدي لإرسال هذا المحتوى</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="response_type" class="form-label">نوع الرد</label>
+                                <select class="form-select" id="response_type" name="response_type" required>
+                                    <option value="">-- اختر نوع الرد --</option>
+                                    <option value="image">صورة</option>
+                                    <option value="video">فيديو</option>
+                                    <option value="audio">ملف صوتي</option>
+                                    <option value="file">مستند/ملف</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="media_type" class="form-label">تنسيق الملف</label>
+                                <input type="text" class="form-control" id="media_type" name="media_type" 
+                                       placeholder="مثال: jpg, mp4, pdf">
+                                <div class="form-text">اختياري - نوع/تنسيق الملف</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="media_url" class="form-label">رابط الوسائط</label>
+                                <input type="url" class="form-control" id="media_url" name="media_url" 
+                                       placeholder="https://example.com/file.jpg" required>
+                                <div class="form-text">رابط مباشر للملف على الإنترنت</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">وصف الرد</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"
+                                          placeholder="وصف مختصر لهذا الرد"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-info w-100" onclick="previewURL()">
+                                    <i class="fas fa-eye me-2"></i>معاينة الرابط
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="urlPreview" class="mt-3" style="display: none;">
+                        <h6>معاينة:</h6>
+                        <div id="previewContent" class="border rounded p-3 bg-light"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>حفظ الرد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Media Preview Modal -->
+<div class="modal fade" id="mediaPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">معاينة الوسائط</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="mediaPreviewContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewURL() {
+    const url = document.getElementById('media_url').value;
+    const type = document.getElementById('response_type').value;
+    
+    if (!url || !type) {
+        alert('الرجاء إدخال الرابط واختيار نوع الرد أولاً');
+        return;
+    }
+    
+    const preview = document.getElementById('previewContent');
+    const container = document.getElementById('urlPreview');
+    
+    let content = '';
+    
+    switch(type) {
+        case 'image':
+            content = `<img src="${url}" class="img-fluid" style="max-height: 200px;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPtiu2LfYo9mBINmB2Yog2KfZhNi12YjYsdipPC90ZXh0Pjwvc3ZnPg=='">`;
+            break;
+        case 'video':
+            content = `<video controls style="max-width: 100%; max-height: 200px;"><source src="${url}" type="video/mp4">المتصفح لا يدعم الفيديو</video>`;
+            break;
+        case 'audio':
+            content = `<audio controls style="width: 100%;"><source src="${url}" type="audio/mpeg">المتصفح لا يدعم الصوت</audio>`;
+            break;
+        case 'file':
+            content = `<div class="text-center"><i class="fas fa-file fa-3x text-primary mb-2"></i><br><a href="${url}" target="_blank" class="btn btn-outline-primary">فتح الملف</a></div>`;
+            break;
+    }
+    
+    preview.innerHTML = content;
+    container.style.display = 'block';
+}
+
+function previewMedia(type, url) {
+    const content = document.getElementById('mediaPreviewContent');
+    
+    let mediaHTML = '';
+    
+    switch(type) {
+        case 'image':
+            mediaHTML = `<img src="${url}" class="img-fluid" style="max-height: 400px;">`;
+            break;
+        case 'video':
+            mediaHTML = `<video controls style="max-width: 100%; max-height: 400px;"><source src="${url}" type="video/mp4">المتصفح لا يدعم الفيديو</video>`;
+            break;
+        case 'audio':
+            mediaHTML = `<div class="text-center"><i class="fas fa-music fa-3x text-primary mb-3"></i><br><audio controls style="width: 100%;"><source src="${url}" type="audio/mpeg">المتصفح لا يدعم الصوت</audio></div>`;
+            break;
+        case 'file':
+            mediaHTML = `<div class="text-center"><i class="fas fa-file fa-4x text-primary mb-3"></i><br><a href="${url}" target="_blank" class="btn btn-primary">تحميل الملف</a></div>`;
+            break;
+    }
+    
+    content.innerHTML = mediaHTML;
+    
+    const modal = new bootstrap.Modal(document.getElementById('mediaPreviewModal'));
+    modal.show();
+}
+
+function testMedia(mediaId) {
+    fetch(`/admin/media/test/${mediaId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ تم اختبار الرد بنجاح!');
+        } else {
+            alert('❌ فشل في الاختبار: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('❌ خطأ في الاتصال: ' + error.message);
+    });
+}
+
+function deleteMedia(mediaId) {
+    if (confirm('هل أنت متأكد من حذف هذا الرد؟')) {
+        window.location.href = `/admin/media/delete/${mediaId}`;
+    }
+}
+
+// Auto-detect file type based on URL
+document.getElementById('media_url').addEventListener('change', function() {
+    const url = this.value.toLowerCase();
+    const typeSelect = document.getElementById('response_type');
+    const typeInput = document.getElementById('media_type');
+    
+    if (url.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
+        typeSelect.value = 'image';
+        typeInput.value = url.split('.').pop();
+    } else if (url.match(/\.(mp4|avi|mov|wmv|flv)$/)) {
+        typeSelect.value = 'video';
+        typeInput.value = url.split('.').pop();
+    } else if (url.match(/\.(mp3|wav|ogg|aac|flac)$/)) {
+        typeSelect.value = 'audio';
+        typeInput.value = url.split('.').pop();
+    } else if (url.match(/\.(pdf|doc|docx|zip|rar|txt)$/)) {
+        typeSelect.value = 'file';
+        typeInput.value = url.split('.').pop();
+    }
+});
+</script>
+{% endblock %}

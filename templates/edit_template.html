@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل القالب - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-edit me-2"></i>تعديل القالب: {{ template[1] }}</h2>
+        <a href="{{ url_for('admin_templates') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+        </a>
+    </div>
+
+    <form method="POST" id="editTemplateForm">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>تعديل بيانات القالب</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">اسم القالب</label>
+                            <input type="text" class="form-control" value="{{ template[1] }}" readonly>
+                            <div class="form-text">لا يمكن تغيير اسم القالب</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">نوع القالب</label>
+                            <input type="text" class="form-control" value="{{ template[2] }}" readonly>
+                            <div class="form-text">لا يمكن تغيير نوع القالب</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">وصف القالب</label>
+                            <textarea class="form-control" id="description" name="description" rows="2">{{ template[4] or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="template_data" class="form-label">بيانات القالب (JSON)</label>
+                            <textarea class="form-control" id="template_data" name="template_data" rows="15" required>{{ template[3] }}</textarea>
+                            <div class="form-text">يجب أن تكون البيانات بصيغة JSON صحيحة</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-info" onclick="validateJSON()">
+                                <i class="fas fa-check me-2"></i>التحقق من JSON
+                            </button>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>حفظ التغييرات
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>معاينة</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="preview" class="bg-light p-3 rounded">
+                            <small class="text-muted">المعاينة ستظهر هنا</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>إجراءات</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-success" onclick="testTemplate()">
+                                <i class="fas fa-play me-2"></i>اختبار القالب
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="resetToOriginal()">
+                                <i class="fas fa-undo me-2"></i>إعادة تعيين
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const originalData = {{ template[3] | tojsonfilter }};
+
+function validateJSON() {
+    const textarea = document.getElementById('template_data');
+    const data = textarea.value.trim();
+    
+    if (!data) {
+        alert('الرجاء إدخال بيانات JSON أولاً');
+        return;
+    }
+    
+    try {
+        const parsed = JSON.parse(data);
+        alert('✅ JSON صحيح!');
+        updatePreview();
+    } catch (error) {
+        alert('❌ خطأ في JSON: ' + error.message);
+        textarea.focus();
+    }
+}
+
+function updatePreview() {
+    const data = document.getElementById('template_data').value.trim();
+    const preview = document.getElementById('preview');
+    
+    if (!data) {
+        preview.innerHTML = '<small class="text-muted">المعاينة ستظهر هنا</small>';
+        return;
+    }
+    
+    try {
+        const parsed = JSON.parse(data);
+        let html = '<div class="border rounded p-2 bg-white">';
+        
+        if (parsed.text) {
+            html += `<div class="mb-2"><strong>النص:</strong> ${parsed.text}</div>`;
+        }
+        
+        if (parsed.buttons) {
+            html += '<div class="mb-2"><strong>الأزرار:</strong><br>';
+            parsed.buttons.forEach(btn => {
+                html += `<span class="badge bg-primary me-1 mb-1">${btn.title}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        if (parsed.quick_replies) {
+            html += '<div class="mb-2"><strong>ردود سريعة:</strong><br>';
+            parsed.quick_replies.forEach(qr => {
+                html += `<span class="badge bg-info me-1 mb-1">${qr.title}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        if (parsed.elements) {
+            html += `<div class="mb-2"><strong>البطاقات:</strong> ${parsed.elements.length} بطاقة</div>`;
+        }
+        
+        if (parsed.attachment) {
+            html += `<div class="mb-2"><strong>المرفق:</strong> ${parsed.attachment.type}</div>`;
+        }
+        
+        html += '</div>';
+        preview.innerHTML = html;
+        
+    } catch (error) {
+        preview.innerHTML = `<small class="text-danger">خطأ في JSON: ${error.message}</small>`;
+    }
+}
+
+function testTemplate() {
+    const templateName = '{{ template[1] }}';
+    
+    fetch(`/admin/templates/test/${templateName}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ تم اختبار القالب بنجاح!');
+        } else {
+            alert('❌ فشل في الاختبار: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('❌ خطأ في الاتصال: ' + error.message);
+    });
+}
+
+function resetToOriginal() {
+    if (confirm('هل أنت متأكد من إعادة تعيين البيانات الأصلية؟')) {
+        document.getElementById('template_data').value = JSON.stringify(originalData, null, 2);
+        updatePreview();
+    }
+}
+
+// Auto-update preview when typing
+document.getElementById('template_data').addEventListener('input', function() {
+    setTimeout(updatePreview, 500);
+});
+
+// Validate form before submit
+document.getElementById('editTemplateForm').addEventListener('submit', function(e) {
+    const data = document.getElementById('template_data').value.trim();
+    
+    if (!data) {
+        e.preventDefault();
+        alert('الرجاء إدخال بيانات القالب');
+        return;
+    }
+    
+    try {
+        JSON.parse(data);
+    } catch (error) {
+        e.preventDefault();
+        alert('خطأ في JSON: ' + error.message);
+        return;
+    }
+});
+
+// Initial preview update
+updatePreview();
+</script>
+{% endblock %}

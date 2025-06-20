@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}الرئيسية - Facebook Messenger Bot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="text-white mb-3">
+                <i class="fab fa-facebook-messenger me-2"></i>
+                Facebook Messenger Bot
+            </h1>
+            <p class="text-white-50">بوت ذكي للماسنجر مع ذكاء اصطناعي متقدم</p>
+        </div>
+
+        <!-- Status Card -->
+        <div class="card mb-4" style="background: linear-gradient(45deg, #28a745, #20c997); color: white;">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3><i class="fas fa-robot me-2"></i>حالة البوت</h3>
+                        <p class="mb-0">البوت يعمل بشكل طبيعي ومستعد لاستقبال الرسائل</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="badge bg-success fs-6 px-3 py-2">
+                            <i class="fas fa-check-circle me-1"></i>نشط
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-comments fa-2x text-primary mb-2"></i>
+                        <h4 class="text-primary">{{ stats.total_conversations }}</h4>
+                        <small class="text-muted">إجمالي المحادثات</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-2x text-success mb-2"></i>
+                        <h4 class="text-success">{{ stats.unique_users }}</h4>
+                        <small class="text-muted">المستخدمين</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-calendar-day fa-2x text-info mb-2"></i>
+                        <h4 class="text-info">{{ stats.today_conversations }}</h4>
+                        <small class="text-muted">محادثات اليوم</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-reply fa-2x text-warning mb-2"></i>
+                        <h4 class="text-warning">{{ stats.popular_responses|length }}</h4>
+                        <small class="text-muted">ردود شائعة</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="card">
+            <div class="card-header bg-primary text-white text-center">
+                <h4><i class="fas fa-cogs me-2"></i>ميزات البوت</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <i class="fas fa-comments fa-2x text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-1">ردود ذكية</h6>
+                                <small class="text-muted">يفهم الرسائل باللغة العربية ويرد بشكل طبيعي</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <i class="fas fa-brain fa-2x text-success me-3"></i>
+                            <div>
+                                <h6 class="mb-1">ذكاء اصطناعي</h6>
+                                <small class="text-muted">يتعلم من المحادثات ويحسن إجاباته</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <i class="fas fa-database fa-2x text-info me-3"></i>
+                            <div>
+                                <h6 class="mb-1">حفظ المحادثات</h6>
+                                <small class="text-muted">يحفظ جميع المحادثات للمراجعة والتحليل</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <i class="fas fa-shield-alt fa-2x text-warning me-3"></i>
+                            <div>
+                                <h6 class="mb-1">آمان عالي</h6>
+                                <small class="text-muted">حماية متقدمة وتشفير للبيانات</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        {% if stats.recent_conversations %}
+        <div class="card mt-4">
+            <div class="card-header bg-dark text-white">
+                <h5><i class="fas fa-history me-2"></i>أحدث المحادثات</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>المستخدم</th>
+                                <th>الرسالة</th>
+                                <th>الرد</th>
+                                <th>الوقت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for conv in stats.recent_conversations[:5] %}
+                            <tr>
+                                <td><code>{{ conv[0][:8] }}...</code></td>
+                                <td>{{ conv[1][:30] }}{% if conv[1]|length > 30 %}...{% endif %}</td>
+                                <td>{{ conv[2][:30] }}{% if conv[2]|length > 30 %}...{% endif %}</td>
+                                <td><small class="text-muted">{{ conv[3][:16] }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Links -->
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h5 class="mb-3">روابط سريعة</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('health_check') }}" class="btn btn-outline-info btn-sm w-100">
+                            <i class="fas fa-heartbeat me-1"></i>فحص الحالة
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('api_stats') }}" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-chart-bar me-1"></i>API الإحصائيات
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('admin_login') }}" class="btn btn-outline-warning btn-sm w-100">
+                            <i class="fas fa-user-shield me-1"></i>لوحة الإدارة
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="/webhook" class="btn btn-outline-secondary btn-sm w-100">
+                            <i class="fas fa-link me-1"></i>Webhook
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

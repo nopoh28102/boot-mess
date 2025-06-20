@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة رد جديد - الإدارة{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="content-area">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus-circle me-2"></i>إضافة رد مخصص جديد</h2>
+                <a href="{{ url_for('admin_responses') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+                </a>
+            </div>
+
+            <form method="POST">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>بيانات الرد الجديد</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="trigger_type" class="form-label">نوع المحفز</label>
+                            <select class="form-select" id="trigger_type" name="trigger_type" required>
+                                <option value="text">نص مباشر</option>
+                                <option value="pattern">نمط (يبحث في الرسالة)</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>نص مباشر:</strong> يتطابق مع الرسالة بالضبط<br>
+                                <strong>نمط:</strong> يبحث عن الكلمة في أي مكان بالرسالة
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="trigger_value" class="form-label">نص المحفز</label>
+                            <input type="text" class="form-control" id="trigger_value" name="trigger_value" 
+                                   placeholder="مثال: مرحبا، help، السلام عليكم" required>
+                            <div class="form-text">
+                                الكلمة أو النص الذي سيؤدي لظهور هذا الرد
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="response_text" class="form-label">نص الرد</label>
+                            <textarea class="form-control" id="response_text" name="response_text" 
+                                      rows="4" placeholder="اكتب الرد الذي سيظهر للمستخدم..." required></textarea>
+                            <div class="form-text">
+                                يمكنك استخدام عدة أسطر. سيظهر هذا النص للمستخدم عند كتابة المحفز
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-lightbulb me-2"></i>أمثلة وإرشادات</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>أمثلة على النص المباشر:</h6>
+                                <ul class="list-unstyled">
+                                    <li><code>مرحبا</code> - يتطابق مع "مرحبا" فقط</li>
+                                    <li><code>السلام عليكم</code> - يتطابق مع "السلام عليكم" فقط</li>
+                                    <li><code>شكرا</code> - يتطابق مع "شكرا" فقط</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>أمثلة على النمط:</h6>
+                                <ul class="list-unstyled">
+                                    <li><code>help</code> - يبحث عن "help" في الرسالة</li>
+                                    <li><code>مساعدة</code> - يبحث عن "مساعدة" في الرسالة</li>
+                                    <li><code>سعر</code> - يبحث عن "سعر" في الرسالة</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>نصيحة:</strong> استخدم النص المباشر للردود الدقيقة، والنمط للردود العامة
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{{ url_for('admin_responses') }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>إلغاء
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>حفظ الرد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('trigger_type').addEventListener('change', function() {
+    const triggerValue = document.getElementById('trigger_value');
+    const responseText = document.getElementById('response_text');
+    
+    if (this.value === 'text') {
+        triggerValue.placeholder = 'مثال: مرحبا، شكرا، وداعا';
+        responseText.placeholder = 'مثال: مرحباً بك! كيف يمكنني مساعدتك؟';
+    } else {
+        triggerValue.placeholder = 'مثال: help، مساعدة، سعر';
+        responseText.placeholder = 'مثال: يمكنني مساعدتك في:\n- الإجابة على الأسئلة\n- تقديم المعلومات';
+    }
+});
+</script>
+{% endblock %}
