@@ -535,6 +535,72 @@ def delete_response(response_id):
     flash('تم حذف الرد بنجاح', 'success')
     return redirect(url_for('admin_responses'))
 
+@app.route('/admin/responses/test/<int:response_id>', methods=['POST'])
+@admin_required
+def test_response_endpoint(response_id):
+    """Test a specific response"""
+    try:
+        conn = DatabaseManager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT trigger_value, response_text FROM custom_responses WHERE id = ?', (response_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            trigger, response = result
+            return jsonify({
+                'success': True,
+                'trigger': trigger,
+                'response': response,
+                'message': 'تم اختبار الرد بنجاح'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'الرد غير موجود'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/responses/toggle/<int:response_id>', methods=['POST'])
+@admin_required
+def toggle_response(response_id):
+    """Toggle response active status"""
+    try:
+        conn = DatabaseManager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('UPDATE custom_responses SET active = 1 - active WHERE id = ?', (response_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'تم تغيير حالة الرد'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/responses/export')
+@admin_required
+def export_responses():
+    """Export responses to JSON"""
+    try:
+        responses = DatabaseManager.get_all_responses()
+        export_data = []
+        for response in responses:
+            export_data.append({
+                'trigger_type': response[1],
+                'trigger_value': response[2],
+                'response_text': response[3],
+                'confidence': response[4],
+                'used_count': response[5],
+                'active': response[6] if len(response) > 6 else 1
+            })
+        
+        from flask import Response
+        import json
+        return Response(
+            json.dumps(export_data, ensure_ascii=False, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': 'attachment; filename=bot_responses.json'}
+        )
+    except Exception as e:
+        flash(f'خطأ في التصدير: {str(e)}', 'error')
+        return redirect(url_for('admin_responses'))
+
 @app.route('/admin/analytics')
 @admin_required
 def admin_analytics():
@@ -623,6 +689,57 @@ def test_template(template_name):
             'success': False,
             'error': str(e)
         })
+
+@app.route('/admin/templates/preview/<int:template_id>')
+@admin_required
+def preview_template(template_id):
+    """Preview template"""
+    try:
+        template = get_template_by_id(template_id)
+        if template:
+            return jsonify({
+                'success': True,
+                'template': {
+                    'name': template[1],
+                    'type': template[2],
+                    'data': json.loads(template[3]) if template[3] else {},
+                    'description': template[4] or ''
+                }
+            })
+        else:
+            return jsonify({'success': False, 'error': 'القالب غير موجود'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/templates/duplicate/<int:template_id>', methods=['POST'])
+@admin_required
+def duplicate_template(template_id):
+    """Duplicate template"""
+    try:
+        template = get_template_by_id(template_id)
+        if template:
+            new_name = f"{template[1]}_copy"
+            save_template(new_name, template[2], template[3], f"نسخة من {template[4] or template[1]}")
+            return jsonify({'success': True, 'message': 'تم نسخ القالب بنجاح'})
+        else:
+            return jsonify({'success': False, 'error': 'القالب غير موجود'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/openai/status')
+def openai_status():
+    """Check OpenAI API status"""
+    try:
+        import openai
+        if not OPENAI_API_KEY:
+            return jsonify({'success': False, 'error': 'مفتاح API غير موجود'})
+        
+        # Simple test request
+        openai.api_key = OPENAI_API_KEY
+        response = openai.Model.list()
+        return jsonify({'success': True, 'message': 'متصل بنجاح'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/admin/media', methods=['GET', 'POST'])
 @admin_required
@@ -805,6 +922,37 @@ def delete_media_response(media_id):
         flash('خطأ في حذف الرد', 'error')
         return redirect(url_for('admin_media'))
 
+@app.route('/admin/media/preview/<int:media_id>')
+@admin_required
+def preview_media_response(media_id):
+    """Preview multimedia response"""
+    try:
+        conn = DatabaseManager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT trigger_text, response_type, media_url, media_type, response_text
+            FROM ai_responses WHERE id = ?
+        ''', (media_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            trigger_text, response_type, media_url, media_type, description = result
+            return jsonify({
+                'success': True,
+                'media': {
+                    'trigger': trigger_text,
+                    'type': response_type,
+                    'url': media_url,
+                    'file_type': media_type,
+                    'description': description or ''
+                }
+            })
+        else:
+            return jsonify({'success': False, 'error': 'الرد غير موجود'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 # Helper functions for template management
 def get_all_templates():
     """Get all message templates"""
@@ -966,4 +1114,5 @@ if __name__ == '__main__':
     print("🔑 Admin Login: admin / admin123")
     print("🔍 Health Check: http://localhost:5000/health")
     print("=" * 60)
+    app.run(host='0.0.0.0', port=5000, debug=True)
     app.run(debug=True, host='0.0.0.0', port=5000)
