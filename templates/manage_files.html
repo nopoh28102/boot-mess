@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الملفات المرفوعة - الإدارة{% endblock %}
+
+{% block content %}
+<div class="content-area">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-folder-open me-2"></i>إدارة الملفات المرفوعة</h2>
+        <div>
+            <a href="{{ url_for('admin_media') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i>العودة للوسائط
+            </a>
+            <button class="btn btn-danger" onclick="cleanupUnusedFiles()">
+                <i class="fas fa-broom me-1"></i>تنظيف الملفات غير المستخدمة
+            </button>
+        </div>
+    </div>
+
+    <!-- Storage Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <i class="fas fa-images fa-2x text-primary mb-2"></i>
+                    <h5>{{ files|selectattr('type', 'equalto', 'image')|list|length }}</h5>
+                    <small>الصور</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <i class="fas fa-video fa-2x text-success mb-2"></i>
+                    <h5>{{ files|selectattr('type', 'equalto', 'video')|list|length }}</h5>
+                    <small>الفيديوهات</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <i class="fas fa-music fa-2x text-info mb-2"></i>
+                    <h5>{{ files|selectattr('type', 'equalto', 'audio')|list|length }}</h5>
+                    <small>الملفات الصوتية</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <i class="fas fa-file fa-2x text-warning mb-2"></i>
+                    <h5>{{ files|selectattr('type', 'equalto', 'file')|list|length }}</h5>
+                    <small>الملفات الأخرى</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Files List -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>جميع الملفات المرفوعة ({{ files|length }})</h5>
+            <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" id="filterType" onchange="filterFiles()">
+                    <option value="">جميع الأنواع</option>
+                    <option value="image">الصور</option>
+                    <option value="video">الفيديوهات</option>
+                    <option value="audio">الملفات الصوتية</option>
+                    <option value="file">الملفات الأخرى</option>
+                </select>
+                <input type="text" class="form-control form-control-sm" placeholder="بحث..." id="searchFiles" onkeyup="searchFiles()">
+            </div>
+        </div>
+        <div class="card-body">
+            {% if files %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="filesTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="60">معاينة</th>
+                            <th>اسم الملف</th>
+                            <th>النوع</th>
+                            <th>الحجم</th>
+                            <th>تاريخ الرفع</th>
+                            <th>الحالة</th>
+                            <th width="150">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in files %}
+                        <tr data-type="{{ file.type }}">
+                            <td>
+                                {% if file.type == 'image' %}
+                                <img src="/{{ file.path }}" class="img-thumbnail" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% elif file.type == 'video' %}
+                                <i class="fas fa-play-circle fa-2x text-success"></i>
+                                {% elif file.type == 'audio' %}
+                                <i class="fas fa-music fa-2x text-info"></i>
+                                {% else %}
+                                <i class="fas fa-file fa-2x text-warning"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ file.name }}</strong>
+                                <br>
+                                <small class="text-muted">/{{ file.path }}</small>
+                            </td>
+                            <td>
+                                {% if file.type == 'image' %}
+                                <span class="badge bg-primary">صورة</span>
+                                {% elif file.type == 'video' %}
+                                <span class="badge bg-success">فيديو</span>
+                                {% elif file.type == 'audio' %}
+                                <span class="badge bg-info">صوت</span>
+                                {% else %}
+                                <span class="badge bg-warning">ملف</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if file.size < 1024 %}
+                                {{ file.size }} B
+                                {% elif file.size < 1048576 %}
+                                {{ "%.1f"|format(file.size/1024) }} KB
+                                {% else %}
+                                {{ "%.1f"|format(file.size/1048576) }} MB
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ file.modified.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success file-status" data-path="{{ file.path }}">فحص...</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-info" onclick="previewFile('{{ file.path }}', '{{ file.type }}')" title="معاينة">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="/{{ file.path }}" download="{{ file.name }}" class="btn btn-outline-primary" title="تحميل">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success" onclick="copyFileUrl('{{ file.path }}')" title="نسخ الرابط">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteFile('{{ file.path }}', '{{ file.name }}')" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                <h5>لا توجد ملفات مرفوعة</h5>
+                <p class="text-muted">ابدأ برفع الملفات من صفحة الوسائط المتعددة</p>
+                <a href="{{ url_for('admin_media') }}" class="btn btn-primary">
+                    <i class="fas fa-upload me-2"></i>رفع ملفات
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">معاينة الملف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center" id="previewContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="downloadBtn">تحميل</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function searchFiles() {
+    const input = document.getElementById('searchFiles');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('filesTable');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName('td');
+        let txtValue = '';
+        for (let j = 0; j < td.length - 1; j++) {
+            txtValue += td[j].textContent || td[j].innerText;
+        }
+        
+        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+            tr[i].style.display = '';
+        } else {
+            tr[i].style.display = 'none';
+        }
+    }
+}
+
+function filterFiles() {
+    const filterType = document.getElementById('filterType').value;
+    const rows = document.querySelectorAll('#filesTable tbody tr');
+    
+    rows.forEach(row => {
+        if (!filterType || row.dataset.type === filterType) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function previewFile(filePath, fileType) {
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    const content = document.getElementById('previewContent');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    downloadBtn.onclick = () => {
+        const link = document.createElement('a');
+        link.href = '/' + filePath;
+        link.download = '';
+        link.click();
+    };
+    
+    let previewHTML = '';
+    
+    switch(fileType) {
+        case 'image':
+            previewHTML = `<img src="/${filePath}" class="img-fluid rounded" style="max-height: 500px;">`;
+            break;
+        case 'video':
+            previewHTML = `<video controls style="max-width: 100%; max-height: 400px;"><source src="/${filePath}" type="video/mp4">المتصفح لا يدعم الفيديو</video>`;
+            break;
+        case 'audio':
+            previewHTML = `<div class="my-4"><i class="fas fa-music fa-5x text-info mb-3"></i><br><audio controls style="width: 100%;"><source src="/${filePath}" type="audio/mpeg">المتصفح لا يدعم الصوت</audio></div>`;
+            break;
+        default:
+            previewHTML = `<div class="my-4"><i class="fas fa-file fa-5x text-warning mb-3"></i><br><p>لا يمكن معاينة هذا النوع من الملفات</p></div>`;
+    }
+    
+    content.innerHTML = previewHTML;
+    modal.show();
+}
+
+function copyFileUrl(filePath) {
+    const url = window.location.origin + '/' + filePath;
+    navigator.clipboard.writeText(url).then(() => {
+        // Show temporary feedback
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+        }, 1000);
+    }).catch(err => {
+        alert('خطأ في نسخ الرابط');
+    });
+}
+
+function deleteFile(filePath, fileName) {
+    if (confirm(`هل أنت متأكد من حذف الملف "${fileName}"؟\nسيتم حذفه نهائياً من الخادم.`)) {
+        fetch('/admin/media/delete-file', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                file_path: filePath
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('خطأ في حذف الملف: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('حدث خطأ: ' + error);
+        });
+    }
+}
+
+function cleanupUnusedFiles() {
+    if (confirm('هل تريد حذف جميع الملفات غير المستخدمة؟\nهذا الإجراء لا يمكن التراجع عنه.')) {
+        alert('هذه الميزة تحت التطوير');
+    }
+}
+
+// Check file usage status
+document.addEventListener('DOMContentLoaded', function() {
+    const statusElements = document.querySelectorAll('.file-status');
+    
+    statusElements.forEach(async (element) => {
+        const filePath = element.dataset.path;
+        try {
+            const response = await fetch('/admin/media/check-usage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ file_path: '/' + filePath })
+            });
+            
+            const data = await response.json();
+            if (data.used) {
+                element.textContent = 'مستخدم';
+                element.className = 'badge bg-success';
+            } else {
+                element.textContent = 'غير مستخدم';
+                element.className = 'badge bg-warning';
+            }
+        } catch (error) {
+            element.textContent = 'خطأ';
+            element.className = 'badge bg-danger';
+        }
+    });
+});
+</script>
+{% endblock %}

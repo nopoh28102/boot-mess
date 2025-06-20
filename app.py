@@ -4,7 +4,7 @@ Facebook Messenger Bot - Complete Integrated Version
 All features in one file with all pages connected
 """
 
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session, send_from_directory
 import os
 import json
 import sqlite3
@@ -17,14 +17,78 @@ import aiohttp
 from datetime import datetime, timedelta
 from functools import wraps
 import random
+from werkzeug.utils import secure_filename
+from werkzeug.datastructures import FileStorage
+import uuid
 from ai_engine_enhanced import EnhancedAIEngine
 
 # Flask app initialization
 app = Flask(__name__)
 app.secret_key = os.environ.get('SESSION_SECRET', 'your-secret-key-here')
 
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads'
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB max file size
+ALLOWED_EXTENSIONS = {
+    'image': {'png', 'jpg', 'jpeg', 'gif', 'webp'},
+    'video': {'mp4', 'avi', 'mov', 'mkv', 'webm'},
+    'audio': {'mp3', 'wav', 'ogg', 'aac', 'm4a'},
+    'file': {'pdf', 'doc', 'docx', 'txt', 'zip', 'rar'}
+}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+# Ensure upload directories exist
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'images'), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'videos'), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'audio'), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'files'), exist_ok=True)
+
 # Database setup
 DATABASE_PATH = 'facebook_bot.db'
+
+def allowed_file(filename, file_type):
+    """Check if file extension is allowed for the given type"""
+    if '.' not in filename:
+        return False
+    extension = filename.rsplit('.', 1)[1].lower()
+    return extension in ALLOWED_EXTENSIONS.get(file_type, set())
+
+def get_file_type_from_extension(filename):
+    """Determine file type from extension"""
+    if '.' not in filename:
+        return 'file'
+    extension = filename.rsplit('.', 1)[1].lower()
+    
+    for file_type, extensions in ALLOWED_EXTENSIONS.items():
+        if extension in extensions:
+            return file_type
+    return 'file'
+
+def save_uploaded_file(file, file_type):
+    """Save uploaded file and return the file path"""
+    if not file or not file.filename:
+        return None
+    
+    if not allowed_file(file.filename, file_type):
+        return None
+    
+    # Generate unique filename
+    file_extension = file.filename.rsplit('.', 1)[1].lower()
+    unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+    
+    # Determine subfolder based on file type
+    subfolder = f"{file_type}s" if file_type != 'file' else 'files'
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, unique_filename)
+    
+    try:
+        file.save(file_path)
+        # Return relative path for URL generation
+        return f"uploads/{subfolder}/{unique_filename}"
+    except Exception as e:
+        logger.error(f"Error saving file: {e}")
+        return None
 
 def init_database():
     """Initialize database with all required tables"""
@@ -746,19 +810,169 @@ def openai_status():
 def admin_media():
     """Manage multimedia responses"""
     if request.method == 'POST':
-        response_type = request.form.get('response_type')
         trigger_text = request.form.get('trigger_text')
-        media_url = request.form.get('media_url')
-        media_type = request.form.get('media_type')
+        response_type = request.form.get('response_type')
         description = request.form.get('description')
         
-        if trigger_text and media_url:
-            save_media_response(trigger_text, response_type, media_url, media_type, description)
+        # Check if file was uploaded or URL provided
+        media_file = request.files.get('media_file')
+        media_url = request.form.get('media_url')
+        
+        final_media_url = None
+        media_type = None
+        
+        if media_file and media_file.filename:
+            # Handle file upload
+            file_path = save_uploaded_file(media_file, response_type)
+            if file_path:
+                final_media_url = f"/{file_path}"  # Local file path
+                media_type = media_file.filename.rsplit('.', 1)[1].lower() if '.' in media_file.filename else 'unknown'
+                flash('تم رفع الملف بنجاح', 'success')
+            else:
+                flash('خطأ في رفع الملف. تأكد من نوع وحجم الملف.', 'error')
+                media_responses = get_all_media_responses()
+                return render_template('admin_media.html', media_responses=media_responses)
+        elif media_url:
+            # Handle URL input
+            final_media_url = media_url
+            media_type = request.form.get('media_type', 'url')
+        else:
+            flash('يجب رفع ملف أو إدخال رابط', 'error')
+            media_responses = get_all_media_responses()
+            return render_template('admin_media.html', media_responses=media_responses)
+        
+        if trigger_text and final_media_url:
+            save_media_response(trigger_text, response_type, final_media_url, media_type, description)
             flash('تم حفظ الرد المتعدد الوسائط بنجاح', 'success')
             return redirect(url_for('admin_media'))
     
     media_responses = get_all_media_responses()
     return render_template('admin_media.html', media_responses=media_responses)
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    """Serve uploaded files"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/admin/media/upload', methods=['POST'])
+@admin_required
+def upload_media_ajax():
+    """Handle AJAX file upload"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'لم يتم اختيار ملف'})
+        
+        file = request.files['file']
+        file_type = request.form.get('type', 'file')
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'لم يتم اختيار ملف'})
+        
+        file_path = save_uploaded_file(file, file_type)
+        if file_path:
+            return jsonify({
+                'success': True,
+                'file_path': f"/{file_path}",
+                'file_name': file.filename,
+                'file_size': file.content_length or 0,
+                'message': 'تم رفع الملف بنجاح'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'خطأ في رفع الملف'})
+    
+    except Exception as e:
+        logger.error(f"Error uploading file: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/media/manage')
+@admin_required
+def manage_uploaded_files():
+    """Manage uploaded files"""
+    try:
+        uploaded_files = []
+        upload_base = app.config['UPLOAD_FOLDER']
+        
+        for subfolder in ['images', 'videos', 'audio', 'files']:
+            folder_path = os.path.join(upload_base, subfolder)
+            if os.path.exists(folder_path):
+                for filename in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, filename)
+                    if os.path.isfile(file_path):
+                        stat = os.stat(file_path)
+                        uploaded_files.append({
+                            'name': filename,
+                            'path': f"uploads/{subfolder}/{filename}",
+                            'type': subfolder[:-1],  # Remove 's' from folder name
+                            'size': stat.st_size,
+                            'modified': datetime.fromtimestamp(stat.st_mtime)
+                        })
+        
+        # Sort by modification date (newest first)
+        uploaded_files.sort(key=lambda x: x['modified'], reverse=True)
+        
+        return render_template('manage_files.html', files=uploaded_files)
+    
+    except Exception as e:
+        logger.error(f"Error listing files: {e}")
+        flash('خطأ في عرض الملفات', 'error')
+        return redirect(url_for('admin_media'))
+
+@app.route('/admin/media/delete-file', methods=['POST'])
+@admin_required
+def delete_uploaded_file():
+    """Delete uploaded file"""
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path') if data else None
+        if not file_path:
+            return jsonify({'success': False, 'error': 'مسار الملف مطلوب'})
+        
+        # Security check - ensure file is in uploads directory
+        if not file_path.startswith('uploads/'):
+            return jsonify({'success': False, 'error': 'مسار غير صحيح'})
+        
+        full_path = os.path.join(app.config['UPLOAD_FOLDER'], file_path.replace('uploads/', ''))
+        
+        if os.path.exists(full_path):
+            os.remove(full_path)
+            
+            # Also remove from database if it's being used
+            conn = DatabaseManager.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM ai_responses WHERE media_url = ?', (f"/{file_path}",))
+            conn.commit()
+            conn.close()
+            
+            return jsonify({'success': True, 'message': 'تم حذف الملف بنجاح'})
+        else:
+            return jsonify({'success': False, 'error': 'الملف غير موجود'})
+    
+    except Exception as e:
+        logger.error(f"Error deleting file: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/admin/media/check-usage', methods=['POST'])
+@admin_required
+def check_file_usage():
+    """Check if uploaded file is being used in responses"""
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path') if data else None
+        
+        if not file_path:
+            return jsonify({'used': False, 'error': 'مسار الملف مطلوب'})
+        
+        conn = DatabaseManager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM ai_responses WHERE media_url = ?', (file_path,))
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return jsonify({'used': count > 0, 'usage_count': count})
+        
+    except Exception as e:
+        logger.error(f"Error checking file usage: {e}")
+        return jsonify({'used': False, 'error': str(e)})
 
 @app.route('/admin/ai-settings', methods=['GET', 'POST'])
 @admin_required
