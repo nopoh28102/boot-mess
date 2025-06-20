@@ -6,9 +6,14 @@
 <div class="content-area">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-layer-group me-2"></i>إدارة قوالب الرسائل</h2>
-        <a href="{{ url_for('create_template') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>إنشاء قالب جديد
-        </a>
+        <div>
+            <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#examplesModal">
+                <i class="fas fa-eye me-1"></i>عرض الأمثلة
+            </button>
+            <a href="{{ url_for('create_template') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>إنشاء قالب جديد
+            </a>
+        </div>
     </div>
 
     <!-- Template Types -->
@@ -419,10 +424,565 @@ function renderTemplatePreview(templateData, targetId) {
         </div>
     </div>
 </div>
+<!-- Examples Modal -->
+<div class="modal fade" id="examplesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">أمثلة القوالب والكروت</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Navigation Tabs -->
+                    <div class="col-md-3">
+                        <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                            <button class="nav-link active" id="v-pills-button-tab" data-bs-toggle="pill" data-bs-target="#v-pills-button" type="button">
+                                <i class="fas fa-mouse-pointer me-2"></i>قوالب الأزرار
+                            </button>
+                            <button class="nav-link" id="v-pills-card-tab" data-bs-toggle="pill" data-bs-target="#v-pills-card" type="button">
+                                <i class="fas fa-id-card me-2"></i>البطاقات
+                            </button>
+                            <button class="nav-link" id="v-pills-carousel-tab" data-bs-toggle="pill" data-bs-target="#v-pills-carousel" type="button">
+                                <i class="fas fa-images me-2"></i>المعرض
+                            </button>
+                            <button class="nav-link" id="v-pills-list-tab" data-bs-toggle="pill" data-bs-target="#v-pills-list" type="button">
+                                <i class="fas fa-list me-2"></i>القوائم
+                            </button>
+                            <button class="nav-link" id="v-pills-quick-tab" data-bs-toggle="pill" data-bs-target="#v-pills-quick" type="button">
+                                <i class="fas fa-bolt me-2"></i>الردود السريعة
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="col-md-9">
+                        <div class="tab-content" id="v-pills-tabContent">
+                            
+                            <!-- Button Templates -->
+                            <div class="tab-pane fade show active" id="v-pills-button">
+                                <h5 class="mb-3">قوالب الأزرار</h5>
+                                
+                                <!-- Button Example 1 -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال 1: أزرار الخدمات</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <p><strong>مرحباً بك في خدماتنا!</strong></p>
+                                                    <p>كيف يمكننا مساعدتك اليوم؟</p>
+                                                    <div class="d-grid gap-2">
+                                                        <button class="btn btn-primary btn-sm">💼 خدمات الأعمال</button>
+                                                        <button class="btn btn-outline-primary btn-sm">🛠️ الدعم التقني</button>
+                                                        <button class="btn btn-outline-primary btn-sm">📞 تواصل معنا</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "attachment": {
+    "type": "template",
+    "payload": {
+      "template_type": "button",
+      "text": "مرحباً بك في خدماتنا!\\nكيف يمكننا مساعدتك اليوم؟",
+      "buttons": [
+        {
+          "type": "postback",
+          "title": "💼 خدمات الأعمال",
+          "payload": "BUSINESS_SERVICES"
+        },
+        {
+          "type": "postback", 
+          "title": "🛠️ الدعم التقني",
+          "payload": "TECH_SUPPORT"
+        },
+        {
+          "type": "postback",
+          "title": "📞 تواصل معنا", 
+          "payload": "CONTACT_US"
+        }
+      ]
+    }
+  }
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Button Example 2 -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال 2: أزرار مع روابط</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <p><strong>تابعنا على وسائل التواصل</strong></p>
+                                                    <div class="d-grid gap-2">
+                                                        <button class="btn btn-primary btn-sm">🌐 موقعنا الإلكتروني</button>
+                                                        <button class="btn btn-outline-primary btn-sm">📱 تطبيق الجوال</button>
+                                                        <button class="btn btn-outline-primary btn-sm">💬 محادثة مباشرة</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "attachment": {
+    "type": "template",
+    "payload": {
+      "template_type": "button",
+      "text": "تابعنا على وسائل التواصل",
+      "buttons": [
+        {
+          "type": "web_url",
+          "url": "https://example.com",
+          "title": "🌐 موقعنا الإلكتروني"
+        },
+        {
+          "type": "web_url",
+          "url": "https://app.example.com",
+          "title": "📱 تطبيق الجوال"
+        },
+        {
+          "type": "postback",
+          "title": "💬 محادثة مباشرة",
+          "payload": "START_CHAT"
+        }
+      ]
+    }
+  }
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Card Templates -->
+                            <div class="tab-pane fade" id="v-pills-card">
+                                <h5 class="mb-3">البطاقات</h5>
+                                
+                                <!-- Card Example 1 -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال 1: بطاقة منتج</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <div class="card" style="max-width: 300px;">
+                                                        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="منتج">
+                                                        <div class="card-body">
+                                                            <h6 class="card-title">هاتف ذكي جديد</h6>
+                                                            <p class="card-text small">أحدث التقنيات بسعر مناسب</p>
+                                                            <p class="text-primary"><strong>$299</strong></p>
+                                                            <div class="d-grid gap-1">
+                                                                <button class="btn btn-primary btn-sm">🛒 أضف للسلة</button>
+                                                                <button class="btn btn-outline-primary btn-sm">ℹ️ تفاصيل أكثر</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "attachment": {
+    "type": "template",
+    "payload": {
+      "template_type": "generic",
+      "elements": [
+        {
+          "title": "هاتف ذكي جديد",
+          "image_url": "https://example.com/image.jpg",
+          "subtitle": "أحدث التقنيات بسعر مناسب - $299",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "🛒 أضف للسلة",
+              "payload": "ADD_TO_CART_PHONE"
+            },
+            {
+              "type": "postback",
+              "title": "ℹ️ تفاصيل أكثر",
+              "payload": "PHONE_DETAILS"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Card Example 2 -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال 2: بطاقة خدمة</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <div class="card" style="max-width: 300px;">
+                                                        <img src="https://via.placeholder.com/300x200?text=خدمة" class="card-img-top" alt="خدمة">
+                                                        <div class="card-body">
+                                                            <h6 class="card-title">استشارة تقنية</h6>
+                                                            <p class="card-text small">احصل على استشارة من خبرائنا</p>
+                                                            <div class="d-grid gap-1">
+                                                                <button class="btn btn-success btn-sm">📅 احجز موعد</button>
+                                                                <button class="btn btn-outline-primary btn-sm">💬 تحدث معنا</button>
+                                                                <button class="btn btn-outline-secondary btn-sm">📋 المزيد</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "attachment": {
+    "type": "template", 
+    "payload": {
+      "template_type": "generic",
+      "elements": [
+        {
+          "title": "استشارة تقنية",
+          "image_url": "https://example.com/service.jpg",
+          "subtitle": "احصل على استشارة من خبرائنا",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "📅 احجز موعد",
+              "payload": "BOOK_CONSULTATION"
+            },
+            {
+              "type": "postback", 
+              "title": "💬 تحدث معنا",
+              "payload": "CHAT_WITH_US"
+            },
+            {
+              "type": "web_url",
+              "url": "https://example.com/services",
+              "title": "📋 المزيد"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Carousel Templates -->
+                            <div class="tab-pane fade" id="v-pills-carousel">
+                                <h5 class="mb-3">المعرض (Carousel)</h5>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال: معرض المنتجات</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <div class="d-flex overflow-auto" style="gap: 10px;">
+                                                        <div class="card flex-shrink-0" style="width: 200px;">
+                                                            <img src="https://via.placeholder.com/200x120?text=منتج1" class="card-img-top" alt="منتج 1">
+                                                            <div class="card-body p-2">
+                                                                <h6 class="card-title small">لابتوب HP</h6>
+                                                                <p class="small">$899</p>
+                                                                <button class="btn btn-primary btn-sm">شراء</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="card flex-shrink-0" style="width: 200px;">
+                                                            <img src="https://via.placeholder.com/200x120?text=منتج2" class="card-img-top" alt="منتج 2">
+                                                            <div class="card-body p-2">
+                                                                <h6 class="card-title small">ماوس لاسلكي</h6>
+                                                                <p class="small">$29</p>
+                                                                <button class="btn btn-primary btn-sm">شراء</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="card flex-shrink-0" style="width: 200px;">
+                                                            <img src="https://via.placeholder.com/200x120?text=منتج3" class="card-img-top" alt="منتج 3">
+                                                            <div class="card-body p-2">
+                                                                <h6 class="card-title small">سماعات بلوتوث</h6>
+                                                                <p class="small">$79</p>
+                                                                <button class="btn btn-primary btn-sm">شراء</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "attachment": {
+    "type": "template",
+    "payload": {
+      "template_type": "generic",
+      "elements": [
+        {
+          "title": "لابتوب HP",
+          "image_url": "https://example.com/laptop.jpg",
+          "subtitle": "أداء قوي للعمل والترفيه - $899",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "🛒 شراء الآن",
+              "payload": "BUY_LAPTOP"
+            }
+          ]
+        },
+        {
+          "title": "ماوس لاسلكي",
+          "image_url": "https://example.com/mouse.jpg", 
+          "subtitle": "ماوس مريح للاستخدام اليومي - $29",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "🛒 شراء الآن",
+              "payload": "BUY_MOUSE"
+            }
+          ]
+        },
+        {
+          "title": "سماعات بلوتوث",
+          "image_url": "https://example.com/headphones.jpg",
+          "subtitle": "جودة صوت عالية ومريحة - $79", 
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "🛒 شراء الآن",
+              "payload": "BUY_HEADPHONES"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- List Templates -->
+                            <div class="tab-pane fade" id="v-pills-list">
+                                <h5 class="mb-3">القوائم</h5>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال: قائمة الخدمات</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <h6>خدماتنا المتاحة:</h6>
+                                                    <div class="list-group">
+                                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>تطوير المواقع</strong>
+                                                                <br><small>مواقع احترافية وسريعة</small>
+                                                            </div>
+                                                            <button class="btn btn-sm btn-primary">اختر</button>
+                                                        </div>
+                                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>تطبيقات الجوال</strong>
+                                                                <br><small>تطبيقات iOS و Android</small>
+                                                            </div>
+                                                            <button class="btn btn-sm btn-primary">اختر</button>
+                                                        </div>
+                                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>التسويق الرقمي</strong>
+                                                                <br><small>حملات إعلانية فعالة</small>
+                                                            </div>
+                                                            <button class="btn btn-sm btn-primary">اختر</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "attachment": {
+    "type": "template",
+    "payload": {
+      "template_type": "list",
+      "top_element_style": "compact",
+      "elements": [
+        {
+          "title": "تطوير المواقع",
+          "subtitle": "مواقع احترافية وسريعة",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "اختر",
+              "payload": "SELECT_WEB_DEV"
+            }
+          ]
+        },
+        {
+          "title": "تطبيقات الجوال", 
+          "subtitle": "تطبيقات iOS و Android",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "اختر",
+              "payload": "SELECT_MOBILE_DEV"
+            }
+          ]
+        },
+        {
+          "title": "التسويق الرقمي",
+          "subtitle": "حملات إعلانية فعالة",
+          "buttons": [
+            {
+              "type": "postback",
+              "title": "اختر", 
+              "payload": "SELECT_MARKETING"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Replies -->
+                            <div class="tab-pane fade" id="v-pills-quick">
+                                <h5 class="mb-3">الردود السريعة</h5>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6>مثال: ردود سريعة للدعم</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>المعاينة:</h6>
+                                                <div class="border rounded p-3 bg-light">
+                                                    <p><strong>كيف يمكننا مساعدتك؟</strong></p>
+                                                    <p>اختر أحد الخيارات التالية:</p>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        <span class="badge bg-primary p-2">مشكلة تقنية</span>
+                                                        <span class="badge bg-primary p-2">طلب استرداد</span>
+                                                        <span class="badge bg-primary p-2">معلومات عن المنتج</span>
+                                                        <span class="badge bg-primary p-2">تحديث الطلب</span>
+                                                        <span class="badge bg-primary p-2">أخرى</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>الكود JSON:</h6>
+                                                <pre class="bg-dark text-light p-2 rounded small"><code>{
+  "text": "كيف يمكننا مساعدتك؟",
+  "quick_replies": [
+    {
+      "content_type": "text",
+      "title": "مشكلة تقنية",
+      "payload": "TECH_ISSUE"
+    },
+    {
+      "content_type": "text", 
+      "title": "طلب استرداد",
+      "payload": "REFUND_REQUEST"
+    },
+    {
+      "content_type": "text",
+      "title": "معلومات عن المنتج",
+      "payload": "PRODUCT_INFO"
+    },
+    {
+      "content_type": "text",
+      "title": "تحديث الطلب", 
+      "payload": "ORDER_UPDATE"
+    },
+    {
+      "content_type": "text",
+      "title": "أخرى",
+      "payload": "OTHER_ISSUE"
+    }
+  ]
+}</code></pre>
+                                                <button class="btn btn-sm btn-success mt-2" onclick="copyCode(this)">نسخ الكود</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <a href="{{ url_for('create_template') }}" class="btn btn-primary">إنشاء قالب جديد</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+function copyCode(button) {
+    const codeElement = button.previousElementSibling;
+    const code = codeElement.textContent;
+    
+    navigator.clipboard.writeText(code).then(() => {
+        const originalText = button.textContent;
+        button.textContent = '✓ تم النسخ';
+        button.classList.remove('btn-success');
+        button.classList.add('btn-info');
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('btn-info');
+            button.classList.add('btn-success');
+        }, 2000);
+    }).catch(() => {
+        alert('خطأ في نسخ الكود');
+    });
+}
+
 function testTemplate(templateName) {
     fetch(`/admin/templates/test/${templateName}`, {
         method: 'POST',
